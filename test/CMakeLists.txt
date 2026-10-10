@@ -12,6 +12,8 @@ endfunction()
 # Targets & Tests Setup
 # ------------------------------------------------------------
 
-add_httpserver_executable(test_basic test.cpp)
+add_httpserver_executable(test_socket socket.cpp)
+add_httpserver_executable(test_tcp tcp.cpp)
 
-add_httpserver_test(test_basic)
+add_httpserver_test(test_socket)
+add_httpserver_test(test_tcp)

@@ -16,6 +16,22 @@ struct
   __uint(max_entries, 64);
 } xsks_map SEC(".maps");
 
+__u16 compute_checksum(const __u8 *data, const __u8 *data_end)
+{
+  __u32 sum = 0;
+
+  for(; data + 2 <= data_end;)
+    sum += *(__u16 *)data, data += 2;
+
+  if(data < data_end) // odd len
+    sum += *(__u8 *)data;
+
+  sum = (sum & 0xFFFF) + (sum >> 16);
+  sum = (sum & 0xFFFF) + (sum >> 16);
+
+  return (__u16)(~sum);
+}
+
 SEC("xdp")
 int xdp_redirect_12345(struct xdp_md *ctx)
 {
@@ -88,7 +104,6 @@ int xdp_redirect_12345(struct xdp_md *ctx)
     data += 2; // skip header
 
     unsigned i = 0;
-#pragma unroll
     for(; i < 8; i++)
     {
       if(data + 4 > data_end) // MPLS header (4) or drop
@@ -141,7 +156,8 @@ int xdp_redirect_12345(struct xdp_md *ctx)
 
     data += 2; // skip Ether/Type
 
-    const __u8 ipv4_octet_0 = *(__u8 *)data;
+    const __u8 *ipv4_header_start = data;
+    const __u8 ipv4_octet_0 = *ipv4_header_start;
 
     if((ipv4_octet_0 >> 4U) != 4 || (ipv4_octet_0 & 0b1111) != 5) // (Ether/Type was IPv4 and Version wasn't ??) AND (IHL is greater than standard)
     {
@@ -166,6 +182,12 @@ int xdp_redirect_12345(struct xdp_md *ctx)
     data += 11; // skip Protocol (1) and Checksum (2)  + Source Address (4) and Desination Address (4)
 
     // now data points to start of payload
+
+    // IPv4 likes checksuming its header ....
+    if(compute_checksum(ipv4_header_start, (__u8 *)data) != 0) // checksum failed - drop it
+    {
+      return XDP_DROP;
+    }
   }
   else // IPv6
   {
@@ -187,6 +209,7 @@ int xdp_redirect_12345(struct xdp_md *ctx)
     const __u8 ipv6_octet_6 = *(__u8 *)data;
 
     // we drop hop-by-hop since they are a nightmare and no one uses them; what was the IEEE thinking jesus christ
+
     if(ipv6_octet_6 != IPPROTO_TCP && ipv6_octet_6 != IPPROTO_UDP) // HTTP goes over TCP or UDP (as QUIC) --- same as IPv4
     {
       return XDP_PASS; // let the kernel figure it out

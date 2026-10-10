@@ -242,9 +242,6 @@ endif()
 
 # ============================================================
 # Filter unsupported warnings
-#
-# At this point every warning has been defined. Each language is checked
-# independently.
 # ============================================================
 
 filter_supported_flags(C_WARNINGS C_WARNINGS_SUPPORTED C)
@@ -299,20 +296,6 @@ endif()
 # ============================================================
 
 # add_subdirectory(abc External lib)
-
-# ============================================================
-# Library
-# ============================================================
-
-add_library(HttpServer STATIC src/HttpServer.cpp src/TcpSocket.cpp)
-
-set_target_properties(HttpServer PROPERTIES LINKER_LANGUAGE CXX)
-
-target_compile_features(HttpServer PUBLIC cxx_std_23)
-
-target_include_directories(HttpServer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-target_link_libraries(HttpServer PRIVATE Boost::headers)
 
 # ============================================================
 # GCC / Clang
@@ -409,8 +392,6 @@ if(IS_GCC OR IS_CLANG)
 
     # ==========================================================
     # RelWithDebInfo
-    #
-    # Optimized but still pleasant in CodeLLDB.
     # ==========================================================
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -430,8 +411,6 @@ if(IS_GCC OR IS_CLANG)
 
     # ==========================================================
     # Generic
-    #
-    # Aggressively optimized, architecture-baseline distribution.
     # ==========================================================
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Generic")
@@ -445,8 +424,6 @@ endif()
 
 # ============================================================
 # Static linking of GCC runtimes
-#
-# Never do this for the Debug sanitizer build.
 # ============================================================
 
 if((IS_GCC OR IS_CLANG)
@@ -458,9 +435,21 @@ if((IS_GCC OR IS_CLANG)
 endif()
 
 # ============================================================
+# Library
+# ============================================================
+
+add_library(HttpServer STATIC src/HttpServer.cpp src/Socket.cpp src/Tcp.cpp)
+
+set_target_properties(HttpServer PROPERTIES LINKER_LANGUAGE CXX)
+
+target_compile_features(HttpServer PUBLIC cxx_std_23)
+
+target_include_directories(HttpServer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(HttpServer PRIVATE Boost::headers)
+
+# ============================================================
 # Tests
-#
-# This is YOUR source tree. Everything configured above applies here.
 # ============================================================
 
 enable_testing()
