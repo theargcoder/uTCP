@@ -1,5 +1,5 @@
-# HttpServer
-This is the repo for the HTTP/HTTPS server for my dev portafolio written in C++ and targeting Linux platforms only using Kernel's AF_XDP socket setting them up manually as well as loading manually the eBPF code into kernel. This is to maximize throughput and minimize latency.
+# uTCP
+userspace TCP stack written in C++ and using AF_XDP Zero Copy (when available) socket types, setting them up manually as well as loading manually the eBPF code binding it to the specified network devices (virual or actual hardware NIC). should in practice maximize throughput and minimize latency when compared to linux kernel's implementation while residing purely in userspace code.
 
 ## References for eBPF and XDP
 
